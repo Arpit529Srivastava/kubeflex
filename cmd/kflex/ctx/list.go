@@ -26,6 +26,41 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// Printer interface for output formatting
+// Prepares for future output types (json/yaml)
+type Printer interface {
+	Header() string
+	Content() string
+	String() string // union of Header + Content
+}
+
+type BasicTable struct {
+	Rows []BasicTableRow
+}
+
+type BasicTableRow struct {
+	Prefix  string
+	CtxName string
+	IsKflex string
+	CPName  string
+}
+
+func (b BasicTable) Header() string {
+	return fmt.Sprintf("%-30s %-18s %-15s\n", "CONTEXT", "MANAGED BY KFLEX", "CONTROLPLANE")
+}
+
+func (b BasicTable) Content() string {
+	out := ""
+	for _, row := range b.Rows {
+		out += fmt.Sprintf("%s %-28s %-18s %-15s\n", row.Prefix, row.CtxName, row.IsKflex, row.CPName)
+	}
+	return out
+}
+
+func (b BasicTable) String() string {
+	return b.Header() + b.Content()
+}
+
 func CommandList() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
@@ -43,7 +78,7 @@ func CommandList() *cobra.Command {
 func ExecuteCtxList(cp common.CP) {
 	config, err := clientcmd.LoadFromFile(cp.Kubeconfig)
 	if err != nil {
-		fmt.Printf("Error loading kubeconfig: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error loading kubeconfig: %s\n", err)
 		os.Exit(1)
 	}
 
@@ -53,7 +88,7 @@ func ExecuteCtxList(cp common.CP) {
 	}
 
 	currentContext := config.CurrentContext
-	fmt.Printf("%-30s %-18s %-15s\n", "CONTEXT", "MANAGED BY KFLEX", "CONTROLPLANE")
+	table := BasicTable{}
 	for name := range config.Contexts {
 		prefix := " "
 		if name == currentContext {
@@ -61,14 +96,22 @@ func ExecuteCtxList(cp common.CP) {
 		}
 		managed := ""
 		controlPlane := ""
-		// Try to extract Kubeflex context extensions
 		kflexCtx, err := kubeconfig.NewKubeflexContextConfig(*config, name)
-		if err == nil && kflexCtx.Extensions != nil {
-			if kflexCtx.Extensions.ControlPlaneName != "" {
-				managed = "yes"
-				controlPlane = kflexCtx.Extensions.ControlPlaneName
-			}
+		if err != nil {
+			// If error extracting extension, exit with error code and do not print blank line
+			fmt.Fprintf(os.Stderr, "Error extracting KubeFlex extension for context '%s': %v\n", name, err)
+			os.Exit(1)
 		}
-		fmt.Printf("%s %-28s %-18s %-15s\n", prefix, name, managed, controlPlane)
+		if kflexCtx.Extensions != nil && kflexCtx.Extensions.ControlPlaneName != "" {
+			managed = "yes"
+			controlPlane = kflexCtx.Extensions.ControlPlaneName
+		}
+		table.Rows = append(table.Rows, BasicTableRow{
+			Prefix:  prefix,
+			CtxName: name,
+			IsKflex: managed,
+			CPName:  controlPlane,
+		})
 	}
+	fmt.Print(table.String())
 }

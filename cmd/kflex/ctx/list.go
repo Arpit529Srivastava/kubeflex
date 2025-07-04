@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/kubestellar/kubeflex/cmd/kflex/common"
+	"github.com/kubestellar/kubeflex/pkg/kubeconfig"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -52,12 +53,22 @@ func ExecuteCtxList(cp common.CP) {
 	}
 
 	currentContext := config.CurrentContext
-	fmt.Println("Available Contexts:")
+	fmt.Printf("%-30s %-18s %-15s\n", "CONTEXT", "MANAGED BY KFLEX", "CONTROLPLANE")
 	for name := range config.Contexts {
 		prefix := " "
 		if name == currentContext {
 			prefix = "*"
 		}
-		fmt.Printf("%s %s\n", prefix, name)
+		managed := ""
+		controlPlane := ""
+		// Try to extract Kubeflex context extensions
+		kflexCtx, err := kubeconfig.NewKubeflexContextConfig(*config, name)
+		if err == nil && kflexCtx.Extensions != nil {
+			if kflexCtx.Extensions.ControlPlaneName != "" {
+				managed = "yes"
+				controlPlane = kflexCtx.Extensions.ControlPlaneName
+			}
+		}
+		fmt.Printf("%s %-28s %-18s %-15s\n", prefix, name, managed, controlPlane)
 	}
 }

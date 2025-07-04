@@ -82,8 +82,13 @@ func GenerateOperatorDeploymentName() string {
 }
 
 func ParseVersionNumber(versionString string) string {
-	versionParts := strings.Split(versionString, ".")
-	return versionParts[0] + "." + versionParts[1] + "." + versionParts[2]
+	fmt.Printf("DEBUG: ParseVersionNumber input: %q\n", versionString)
+	parts := strings.Split(versionString, ".")
+	if len(parts) < 2 {
+		fmt.Fprintf(os.Stderr, "WARNING: Unexpected version string format in ParseVersionNumber: %q\n", versionString)
+		return versionString
+	}
+	return parts[1]
 }
 
 func GetKubernetesClusterVersionInfo(kubeconfig string) (string, error) {

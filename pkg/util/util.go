@@ -82,7 +82,6 @@ func GenerateOperatorDeploymentName() string {
 }
 
 func ParseVersionNumber(versionString string) string {
-	fmt.Printf("DEBUG: ParseVersionNumber input: %q\n", versionString)
 	parts := strings.Split(versionString, ".")
 	if len(parts) < 2 {
 		fmt.Fprintf(os.Stderr, "WARNING: Unexpected version string format in ParseVersionNumber: %q\n", versionString)

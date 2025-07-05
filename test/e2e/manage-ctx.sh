@@ -22,8 +22,8 @@ set -x # echo so that users can understand what is happening
 : -------------------------------------------------------------------------
 : Create a simple Control plane
 :
-CTX_NAME="testcp"
-NEW_CTX_NAME="cp-renamed"
+CTX_NAME="check-ctx-list"
+NEW_CTX_NAME="check-ctx-list-renamed"
 
 ./bin/kflex create $CTX_NAME --chatty-status=false
 
@@ -34,13 +34,13 @@ CTX_LIST_OUTPUT=$(./bin/kflex ctx list)
 echo "$CTX_LIST_OUTPUT"
 
 # Check for header columns
-if ! echo "$CTX_LIST_OUTPUT" | grep -q "CONTEXT" || ! echo "$CTX_LIST_OUTPUT" | grep -q "MANAGED BY KFLEX" || ! echo "$CTX_LIST_OUTPUT" | grep -q "CONTROLPLANE"; then
+if [[ ! -z "$(echo "$CTX_LIST_OUTPUT" | grep -q "CONTEXT" || ! echo "$CTX_LIST_OUTPUT" | grep -q "MANAGED BY KFLEX" || ! echo "$CTX_LIST_OUTPUT" | grep -q "CONTROLPLANE")" ]]; then
   echo "ERROR: kflex ctx list output missing expected columns" >&2
   exit 1
 fi
 
 # Check for managed context row
-if ! echo "$CTX_LIST_OUTPUT" | grep -q "${CTX_NAME}" || ! echo "$CTX_LIST_OUTPUT" | grep -q "yes" || ! echo "$CTX_LIST_OUTPUT" | grep -q "${CTX_NAME}"; then
+if [[ ! -z "$(echo "$CTX_LIST_OUTPUT" | grep -q "${CTX_NAME}" || ! echo "$CTX_LIST_OUTPUT" | grep -q "yes" || ! echo "$CTX_LIST_OUTPUT" | grep -q "${CTX_NAME}")" ]]; then
   echo "ERROR: kflex ctx list output missing managed context info" >&2
   exit 1
 fi

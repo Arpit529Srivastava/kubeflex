@@ -24,20 +24,21 @@ import (
 	"github.com/kubestellar/kubeflex/pkg/kubeconfig"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 // Printer interface for output formatting
-// Prepares for future output types (json/yaml)
 type Printer interface {
 	Header() string
 	Content() string
-	String() string // union of Header + Content
 }
 
+// BasicTable implements Printer and fmt.Stringer for table output.
 type BasicTable struct {
 	Rows []BasicTableRow
 }
 
+// BasicTableRow represents a row in the context list table.
 type BasicTableRow struct {
 	Prefix  string
 	CtxName string
@@ -45,10 +46,12 @@ type BasicTableRow struct {
 	CPName  string
 }
 
+// Header returns the table header for BasicTable.
 func (b BasicTable) Header() string {
 	return fmt.Sprintf("%-30s %-18s %-15s\n", "CONTEXT", "MANAGED BY KFLEX", "CONTROLPLANE")
 }
 
+// Content returns the formatted table rows for BasicTable.
 func (b BasicTable) Content() string {
 	out := ""
 	for _, row := range b.Rows {
@@ -88,6 +91,12 @@ func ExecuteCtxList(cp common.CP) {
 	}
 
 	currentContext := config.CurrentContext
+	printer := NewBasicTablePrinter(config, currentContext)
+	fmt.Print(printer.String())
+}
+
+// NewBasicTablePrinter constructs a BasicTable from kubeconfig and current context.
+func NewBasicTablePrinter(config *api.Config, currentContext string) BasicTable {
 	table := BasicTable{}
 	for name := range config.Contexts {
 		prefix := " "
@@ -98,7 +107,6 @@ func ExecuteCtxList(cp common.CP) {
 		controlPlane := ""
 		kflexCtx, err := kubeconfig.NewKubeflexContextConfig(*config, name)
 		if err != nil {
-			// If error extracting extension, exit with error code and do not print blank line
 			fmt.Fprintf(os.Stderr, "Error extracting KubeFlex extension for context '%s': %v\n", name, err)
 			os.Exit(1)
 		}
@@ -113,5 +121,5 @@ func ExecuteCtxList(cp common.CP) {
 			CPName:  controlPlane,
 		})
 	}
-	fmt.Print(table.String())
+	return table
 }

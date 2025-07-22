@@ -22,8 +22,8 @@ set -x # echo so that users can understand what is happening
 : -------------------------------------------------------------------------
 : Create a simple Control plane
 :
-CTX_NAME="check-ctx-list"
-NEW_CTX_NAME="check-ctx-list-renamed"
+CTX_NAME="testcp"
+NEW_CTX_NAME="cp-renamed"
 
 ./bin/kflex create $CTX_NAME --chatty-status=false
 
